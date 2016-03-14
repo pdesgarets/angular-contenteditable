@@ -21,11 +21,37 @@ angular.module('contenteditable', [])
         'noLineBreaks',
         'selectNonEditable',
         'moveCaretToEndOnChange',
-        'stripTags'
+        'stripTags',
+        'json'
       ], function(opt) {
         var o = attrs[opt]
         opts[opt] = o && o !== 'false'
       })
+
+      if (opts.json) {
+        ngModel.$parsers.push(fromUser);
+        ngModel.$formatters.push(toUser);
+
+        function fromUser(text) {
+          // Beware: trim() is not available in old browsers
+          if (!text || text.trim() === '') {
+            return {};
+          } else {
+            try {
+              lastValid = angular.fromJson(text);
+              ngModel.$setValidity('invalidJson', true);
+            } catch (e) {
+              ngModel.$setValidity('invalidJson', false);
+            }
+            return lastValid;
+          }
+        }
+
+        function toUser(object) {
+          // better than JSON.stringify(), because it formats + filters $$hashKey etc.
+          return angular.toJson(object, true);
+        }
+      }
 
       // view -> model
       element.bind('input', function(e) {
