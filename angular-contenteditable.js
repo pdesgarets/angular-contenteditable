@@ -22,7 +22,8 @@ angular.module('contenteditable', [])
         'selectNonEditable',
         'moveCaretToEndOnChange',
         'stripTags',
-        'json'
+        'json',
+        'required'
       ], function(opt) {
         var o = attrs[opt]
         opts[opt] = o && o !== 'false'
@@ -31,26 +32,27 @@ angular.module('contenteditable', [])
       if (opts.json) {
         ngModel.$parsers.push(fromUser);
         ngModel.$formatters.push(toUser);
+      }
 
-        function fromUser(text) {
-          // Beware: trim() is not available in old browsers
-          if (!text || text.trim() === '') {
-            return {};
-          } else {
-            try {
-              lastValid = angular.fromJson(text);
-              ngModel.$setValidity('invalidJson', true);
-            } catch (e) {
-              ngModel.$setValidity('invalidJson', false);
-            }
-            return lastValid;
+      function fromUser(text) {
+        var lastValid;
+        // Beware: trim() is not available in old browsers
+        if (!text || text.trim() === '') {
+          return {};
+        } else {
+          try {
+            lastValid = angular.fromJson(text);
+            ngModel.$setValidity('json', true);
+          } catch (e) {
+            ngModel.$setValidity('json', false);
           }
+          return lastValid || {};
         }
+      }
 
-        function toUser(object) {
-          // better than JSON.stringify(), because it formats + filters $$hashKey etc.
-          return angular.toJson(object, true);
-        }
+      function toUser(object) {
+        // better than JSON.stringify(), because it formats + filters $$hashKey etc.
+        return angular.toJson(object, true);
       }
 
       // view -> model
@@ -129,6 +131,13 @@ angular.module('contenteditable', [])
             sel.addRange(range)
           }
         })
+      }
+
+      if (opts.required) {
+        ngModel.$validators.required = function (modelValue) {
+          "use strict";
+          return !ngModel.$isEmpty(modelValue);
+        }
       }
     }
   }}]);
